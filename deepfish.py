@@ -11,8 +11,6 @@ class Deepfish(Player):
 		if gn_current.move is not None:
 			
 
-
-
 def iterativeMTDF(pos, maxd, guess, func, color, transpos): 
 	#initialize guess here?
 	g = guess
@@ -73,7 +71,7 @@ def alphabeta(pos, alpha, beta, d, func, color, transpos):
 		for move in pos.genMoves():
 			if g > alpha:
 
-				g = min(g, alphabeta(move, alpha, b, d-1, func, -color)
+				g = min(g, alphabeta(move, alpha, b, d-1, func, -color))
 				b = min(b, g)
 
 
