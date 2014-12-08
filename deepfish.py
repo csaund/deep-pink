@@ -12,15 +12,16 @@ class Deepfish(Player):
 			
 
 
-def iterativeMTDF(pos, maxd, guess): 
+
+def iterativeMTDF(pos, maxd, guess, func, color, transpos): 
 	#initialize guess here?
 	g = guess
 	for d in range(0, maxd):
-		g = MTDF(pos, g, d)
+		g = MTDF(pos, g, d, func, color, transpos)
 		#break when out of time
 	return g
 
-def MTDF(pos, d, guess, func):
+def MTDF(pos, d, guess, func, color):
 	g = guess
 	upperbound = float('inf')
 	lowerbound = float('-inf')
@@ -30,7 +31,8 @@ def MTDF(pos, d, guess, func):
 		else:
 			beta = g
 
-		g = alphabeta(pos, beta - 1, beta, d, func)
+
+		g = alphabeta(pos, beta - 1, beta, d, func, color, transpos)
 
 		if g < beta:
 			upperbound = g
@@ -39,7 +41,8 @@ def MTDF(pos, d, guess, func):
 
 	return g
 
-def alphabeta(pos, alpha, beta, d, func):
+
+def alphabeta(pos, alpha, beta, d, func, color, transpos):
 	#if it's already in the table
 	if pos in table:
 		N = table[pos]
@@ -50,14 +53,16 @@ def alphabeta(pos, alpha, beta, d, func):
 		beta = min(beta, N.upperbound)
 
 	if d == 0: g = func(pos)
-	else if N == MAXNODE
+
+	else if N.color == color: 	#maximize N 
 
 		g = float("-inf")
 		a = alpha #save original alpha value
 
 		for move in pos.genMoves():
 			if g < beta:
-				g = max(g, alphabeta(move, a, beta, d-1))
+
+				g = max(g, alphabeta(move, a, beta, d-1, func, color))
 				a = max(a, g)
 
 	else # N == MINNODE
@@ -67,7 +72,8 @@ def alphabeta(pos, alpha, beta, d, func):
 
 		for move in pos.genMoves():
 			if g > alpha:
-				g = min(g, alphabeta(move, alpha, b, d-1))
+
+				g = min(g, alphabeta(move, alpha, b, d-1, func, -color)
 				b = min(b, g)
 
 
@@ -81,7 +87,12 @@ def alphabeta(pos, alpha, beta, d, func):
 	
 	#put N in the table. 
 
-	return g
+
+	return g	
+
+
+
+
 
 
 
