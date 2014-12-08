@@ -29,7 +29,8 @@ def MTDF(pos, d, guess, func, color):
 		else:
 			beta = g
 
-		g = alphabeta(pos, beta - 1, beta, d, func, color, transpos)
+		g = negamax(pos, d, beta - 1, beta, color, func, transpos)
+		#g = alphabeta(pos, beta - 1, beta, d, color, func, transpos)
 
 		if g < beta:
 			upperbound = g
