@@ -130,6 +130,7 @@ class Computer(Player):
 
         depth = self._maxd
         t0 = time.time()
+		
         best_value, best_move = negamax(self._pos, depth, alpha, beta, 1, self._func)
         crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
         print depth, best_value, crdn, time.time() - t0
