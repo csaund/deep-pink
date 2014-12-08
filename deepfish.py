@@ -1,3 +1,4 @@
+
 class Deepfish(Player):
 	def __init__(self, func, maxd=5):	#max depth of whatever
 		self._func = func
@@ -9,6 +10,7 @@ class Deepfish(Player):
 
 		if gn_current.move is not None:
 			
+
 
 
 def iterativeMTDF(pos, maxd, guess, func, color, transpos): 
@@ -39,6 +41,7 @@ def MTDF(pos, d, guess, func, color):
 
 	return g
 
+
 def alphabeta(pos, alpha, beta, d, func, color, transpos):
 	#if it's already in the table
 	if pos in table:
@@ -50,6 +53,7 @@ def alphabeta(pos, alpha, beta, d, func, color, transpos):
 		beta = min(beta, N.upperbound)
 
 	if d == 0: g = func(pos)
+
 	else if N.color == color: 	#maximize N 
 
 		g = float("-inf")
@@ -57,6 +61,7 @@ def alphabeta(pos, alpha, beta, d, func, color, transpos):
 
 		for move in pos.genMoves():
 			if g < beta:
+
 				g = max(g, alphabeta(move, a, beta, d-1, func, color))
 				a = max(a, g)
 
@@ -67,6 +72,7 @@ def alphabeta(pos, alpha, beta, d, func, color, transpos):
 
 		for move in pos.genMoves():
 			if g > alpha:
+
 				g = min(g, alphabeta(move, alpha, b, d-1, func, -color)
 				b = min(b, g)
 
@@ -80,6 +86,7 @@ def alphabeta(pos, alpha, beta, d, func, color, transpos):
 		N.lowerbound = g
 	
 	#put N in the table. 
+
 
 	return g	
 

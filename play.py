@@ -207,6 +207,12 @@ class Sunfish(Player):
 
         return gn_new
 
+
+        
+        
+
+
+
 def game(func):
     gn_current = chess.pgn.Game()
 
@@ -247,6 +253,7 @@ def game(func):
             
 def play():
     func = get_model_from_pickle('model.pickle')
+    print 'model loaded'
     while True:
         side, times = game(func)
         f = open('stats.txt', 'a')
