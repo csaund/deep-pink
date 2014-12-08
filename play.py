@@ -15,7 +15,6 @@ import pickle
 import random
 import traceback
 
-
 def get_model_from_pickle(fn):
     f = open(fn)
     Ws, bs = pickle.load(f)
@@ -43,7 +42,7 @@ def sf2array(pos, flip):
 
 CHECKMATE_SCORE = 1e6
 
-def negamax(pos, depth, alpha, beta, color, func):
+def negamax(pos, depth, alpha, beta, color, func, transposition):
     moves = []
     X = []
     pos_children = []
@@ -53,10 +52,9 @@ def negamax(pos, depth, alpha, beta, color, func):
         X.append(sf2array(pos_child, flip=(color==1)))
         pos_children.append(pos_child)
 
-    if len(X) == 0:
-        return Exception('eh?')
+    if len(X) == 0: return Exception('eh?')
 
-    # Use model to predict scores
+    # scores = [transposition.get(move, None) or func()) for move, x in zip(moves, X)]
     scores = func(X)
 
     for i, pos_child in enumerate(pos_children):
@@ -64,6 +62,7 @@ def negamax(pos, depth, alpha, beta, color, func):
             scores[i] = CHECKMATE_SCORE
 
     child_nodes = sorted(zip(scores, moves), reverse=True)
+    # transposition.update({boardposition:score for move, score in zip(moves, scores)})
 
     best_value = float('-inf')
     best_move = None
@@ -74,7 +73,7 @@ def negamax(pos, depth, alpha, beta, color, func):
         else:
             # print 'ok will recurse', sunfish.render(move[0]) + sunfish.render(move[1])
             pos_child = pos.move(move)
-            neg_value, _ = negamax(pos_child, depth-1, -beta, -alpha, -color, func)
+            neg_value, _ = negamax(pos_child, depth-1, -beta, -alpha, -color, func, transposition)
             value = -neg_value
 
         # value += random.gauss(0, 0.001)
@@ -89,10 +88,47 @@ def negamax(pos, depth, alpha, beta, color, func):
         if value > alpha:
             alpha = value
 
+        # print 'negamax', alpha, beta
+
         if alpha > beta:
             break
 
     return best_value, best_move
+
+# ============== DEEPFISH ===============
+
+def iterativeMTDF(pos, maxd, guess, color, func, transposition): 
+    #initialize guess here?
+    g = guess
+    for d in range(1, maxd+1):
+        g, m = MTDF(pos, d, g, color, func, transposition)
+        #break when out of time
+    return g, m
+
+def MTDF(pos, d, guess, color, func, transposition):
+    g = guess
+    # print 'depth', d
+    upperbound = float('inf')
+    lowerbound = float('-inf')
+    while lowerbound < upperbound:
+        if g == lowerbound:
+            beta = g + 1    #need to check bounds of state values
+        else:
+            beta = g
+
+        g, m = negamax(pos, d, lowerbound, upperbound, color, func, transposition)
+        # print 'MTDF', g, m
+
+        if g < beta:
+            upperbound = g
+        else:
+            lowerbound = g
+
+        # print 'MTDF', beta
+
+    return g, m
+
+# ========================================
 
 
 def create_move(board, crdn):
@@ -107,6 +143,43 @@ def create_move(board, crdn):
 class Player(object):
     def move(self, gn_current):
         raise NotImplementedError()
+
+
+class Deepfish(Player):
+    def __init__(self, func, maxd=5):
+        self.transposition = {}
+        self._func = func
+        self._pos = sunfish.Position(sunfish.initial, 0, (True,True), (True,True), 0, 0)
+        self._maxd = maxd
+
+    def move(self, gn_current):
+        assert(gn_current.board().turn == 0)
+
+        if gn_current.move is not None:
+            # Apply last_move
+            crdn = str(gn_current.move)
+            move = (119 - sunfish.parse(crdn[0:2]), 119 - sunfish.parse(crdn[2:4]))
+            self._pos = self._pos.move(move)
+
+        # for depth in xrange(1, self._maxd+1):
+        alpha = float('-inf')
+        beta = float('inf')
+
+        depth = self._maxd
+        t0 = time.time()
+        best_value, best_move = iterativeMTDF(self._pos, depth, 0, 1, self._func, {})
+        crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
+        print depth, best_value, crdn, time.time() - t0
+
+        self._pos = self._pos.move(best_move)
+        crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
+        move = create_move(gn_current.board(), crdn)
+        
+        gn_new = chess.pgn.GameNode()
+        gn_new.parent = gn_current
+        gn_new.move = move
+
+        return gn_new
 
 
 class Computer(Player):
@@ -130,8 +203,8 @@ class Computer(Player):
 
         depth = self._maxd
         t0 = time.time()
-		
-        best_value, best_move = negamax(self._pos, depth, alpha, beta, 1, self._func)
+        
+        best_value, best_move = negamax(self._pos, depth, alpha, beta, 1, self._func, {})
         crdn = sunfish.render(best_move[0]) + sunfish.render(best_move[1])
         print depth, best_value, crdn, time.time() - t0
 
@@ -142,7 +215,6 @@ class Computer(Player):
         gn_new = chess.pgn.GameNode()
         gn_new.parent = gn_current
         gn_new.move = move
-
 
         return gn_new
 
@@ -208,11 +280,6 @@ class Sunfish(Player):
         return gn_new
 
 
-        
-        
-
-
-
 def game(func):
     gn_current = chess.pgn.Game()
 
@@ -221,7 +288,7 @@ def game(func):
 
     print 'maxd %f maxn %f' % (maxd, maxn)
 
-    player_a = Computer(func, maxd=maxd)
+    player_a = Deepfish(func, maxd=maxd)
     player_b = Sunfish(maxn=maxn)
 
     times = {'A': 0.0, 'B': 0.0}
